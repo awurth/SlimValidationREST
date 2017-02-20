@@ -41,11 +41,12 @@ class Validator
     public function validate(Request $request, array $rules, array $messages = [])
     {
         foreach ($rules as $param => $options) {
-            try {
-                $value = $request->getParam($param);
-                $this->data[$param] = $value;
+            $value = $request->getParam($param);
+            $this->data[$param] = $value;
+            $isRule = $options instanceof V;
 
-                if ($options instanceof V) {
+            try {
+                if ($isRule) {
                     $options->assert($value);
                 } else {
                     if (!isset($options['rules']) || !($options['rules'] instanceof V)) {
@@ -55,14 +56,14 @@ class Validator
                     $options['rules']->assert($value);
                 }
             } catch (NestedValidationException $e) {
-                $paramRules = $options instanceof V ? $options->getRules() : $options['rules']->getRules();
+                $paramRules = $isRule ? $options->getRules() : $options['rules']->getRules();
 
                 $rulesNames = [];
                 foreach ($paramRules as $rule) {
                     $rulesNames[] = lcfirst((new ReflectionClass($rule))->getShortName());
                 }
 
-                if (isset($options['messages'])) {
+                if (!$isRule && isset($options['messages'])) {
                     $errorMessages = array_merge(
                         $e->findMessages($rulesNames),
                         $e->findMessages($messages),
@@ -72,7 +73,7 @@ class Validator
                     $errorMessages = array_merge($e->findMessages($rulesNames), $e->findMessages($messages));
                 }
 
-                $this->errors[$param] = array_filter(array_values($errorMessages));
+                $this->errors[$param] = array_values(array_filter($errorMessages));
             }
         }
 
