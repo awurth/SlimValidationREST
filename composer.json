@@ -1,0 +1,23 @@
+{
+    "name": "awurth/slim-validation-rest",
+    "description": "A validator for Slim micro-framework",
+    "keywords": ["validation", "slim"],
+    "homepage": "https://github.com/awurth/slim-validation-rest",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alexis Wurth",
+            "email": "alexis.wurth57@gmail.com",
+            "homepage": "https://github.com/awurth"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Awurth\\Slim\\Rest\\Validation\\": ""
+        }
+    },
+    "require": {
+        "psr/http-message": "^1.0",
+        "respect/validation": "^1.1"
+    }
+}
