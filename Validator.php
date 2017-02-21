@@ -12,7 +12,7 @@ use ReflectionClass;
  * Validator
  *
  * @author  Alexis Wurth <alexis.wurth57@gmail.com>
- * @package Awurth\Slim\Validation
+ * @package Awurth\Slim\Rest\Validation
  */
 class Validator
 {
