@@ -31,12 +31,27 @@ class Validator
     protected $data;
 
     /**
+     * @var array
+     */
+    protected $defaultMessages;
+
+    /**
+     * Create new Validator
+     *
+     * @param array $defaultMessages
+     */
+    public function __construct(array $defaultMessages = [])
+    {
+        $this->defaultMessages = $defaultMessages;
+    }
+
+    /**
      * Validate request params with the given rules
      *
      * @param Request $request
      * @param array $rules
      * @param array $messages
-     * @return Validator
+     * @return $this
      */
     public function validate(Request $request, array $rules, array $messages = [])
     {
@@ -58,22 +73,38 @@ class Validator
             } catch (NestedValidationException $e) {
                 $paramRules = $isRule ? $options->getRules() : $options['rules']->getRules();
 
+                // Get the names of all rules used for this param
                 $rulesNames = [];
                 foreach ($paramRules as $rule) {
                     $rulesNames[] = lcfirst((new ReflectionClass($rule))->getShortName());
                 }
 
-                if (!$isRule && isset($options['messages'])) {
-                    $errorMessages = array_merge(
-                        $e->findMessages($rulesNames),
-                        $e->findMessages($messages),
-                        $e->findMessages($options['messages'])
-                    );
-                } else {
-                    $errorMessages = array_merge($e->findMessages($rulesNames), $e->findMessages($messages));
-                }
+                // If the 'message' key exists, set it as only message for this param
+                if (!$isRule && isset($options['message']) && is_string($options['message'])) {
+                    $this->errors[$param] = [$options['message']];
+                    return $this;
+                } else { // If the 'messages' key exists, override global messages
+                    $params = [
+                        $e->findMessages($rulesNames)
+                    ];
 
-                $this->errors[$param] = array_values(array_filter($errorMessages));
+                    // If default messages are defined
+                    if (!empty($this->defaultMessages)) {
+                        $params[] = $e->findMessages($this->defaultMessages);
+                    }
+
+                    // If global messages are defined
+                    if (!empty($messages)) {
+                        $params[] = $e->findMessages($messages);
+                    }
+
+                    // If individual messages are defined
+                    if (!$isRule && isset($options['messages'])) {
+                        $params[] = $e->findMessages($options['messages']);
+                    }
+
+                    $this->errors[$param] = array_values(array_filter(call_user_func_array('array_merge', $params)));
+                }
             }
         }
 
@@ -85,7 +116,7 @@ class Validator
      *
      * @param string $param
      * @param string $message
-     * @return Validator
+     * @return $this
      */
     public function addError($param, $message)
     {
@@ -98,7 +129,7 @@ class Validator
      *
      * @param string $param
      * @param array $messages
-     * @return Validator
+     * @return $this
      */
     public function addErrors($param, array $messages)
     {
@@ -123,7 +154,7 @@ class Validator
      * Set all errors
      *
      * @param array $errors
-     * @return Validator
+     * @return $this
      */
     public function setErrors(array $errors)
     {
@@ -147,7 +178,7 @@ class Validator
      *
      * @param string $param
      * @param array $errors
-     * @return Validator
+     * @return $this
      */
     public function setErrorsOf($param, array $errors)
     {
@@ -163,12 +194,7 @@ class Validator
      */
     public function getFirst($param)
     {
-        if (isset($this->errors[$param])) {
-            $first = array_slice($this->errors[$param], 0, 1);
-            return array_shift($first);
-        }
-
-        return '';
+        return isset($this->errors[$param][0]) ? $this->errors[$param][0] : '';
     }
 
     /**
@@ -186,7 +212,7 @@ class Validator
      * Set the value of parameters
      *
      * @param array $data
-     * @return Validator
+     * @return $this
      */
     public function setValues(array $data)
     {
@@ -198,7 +224,7 @@ class Validator
      * Set validator data
      *
      * @param array $data
-     * @return Validator
+     * @return $this
      */
     public function setData(array $data)
     {
